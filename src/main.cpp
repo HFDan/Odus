@@ -6,6 +6,7 @@
 #include <config.h>
 #include <unistd.h>
 #include <argp.h>
+#include <sys/stat.h>
 
 const char* argp_program_version = "0.0.1";
 const char* argp_program_bug_address = "the Github repository";
@@ -53,10 +54,22 @@ static char doc[] = "A replacement for sudo. Written in 2 hours.";
 
 static argp argp = {options, parse_opt, args_doc, doc};
 
+bool CheckPerms() {
+	struct stat st;
+	stat("/proc/self/exe", &st);
+
+	return !(st.st_uid != 0 || (st.st_mode & S_ISUID) == 0);
+}
+
 int main(int argc, char** argv) {
 	arguments cmd_args;
 	// Default arguments
 	cmd_args.user = (char*)"root";
+
+	if (!CheckPerms()) {
+		fprintf(stderr, "Odus must be owned by uid 0 and have the suid bit set!\n");
+		return EXIT_FAILURE;
+	}
 
 	// Parse arguments
 	argp_parse(&argp, argc, argv, 0, 0, &cmd_args);
@@ -66,6 +79,12 @@ int main(int argc, char** argv) {
 	// This works due to short-circuiting
 	if ( cp.GetCurrentUserPermissions().NoPassword || CheckPasswd(cmd_args.user) ) {
 		seteuid(GetUidByUser(cmd_args.user));
+
+		// Not enough arguments
+		if (cmd_args.positional_argc == 0) {
+			fprintf(stderr, "Error: Must supply a command!\n");
+			exit(EXIT_FAILURE);
+		}
 
 		char** args = new char*[cmd_args.positional_argc];
 		for (int i = 0; i < cmd_args.positional_argc; i++) {
