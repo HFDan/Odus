@@ -16,6 +16,8 @@ ConfigParser::ConfigParser(std::string_view ConfigPath) {
 
 	// We have no command perms by default
 	CommandPerms.clear();
+	// No group perms either
+	GroupPerms.clear();
 
 	if (configFile.is_open()) {
 		ParseConfig(configFile);
@@ -75,22 +77,14 @@ void ConfigParser::ParseConfig(std::ifstream& fs) {
 				while (std::getline(ss, tok, ' ')) {
 					switch (djb2a(tok)) {
 						case "nopasswd"_hash:
-						{
 							UserPerms[user].NoPassword = true;
 							break;
-						}
-
 						case "targetpasswd"_hash:
-						{
 							UserPerms[user].TargetPassword = true;
 							break;
-						}
-
 						case "selfpasswd"_hash:
-						{
 							UserPerms[user].TargetPassword = false;
 							break;
-						}
 
 						default:
 							// TODO: Error Handling
@@ -99,6 +93,31 @@ void ConfigParser::ParseConfig(std::ifstream& fs) {
 				}
 
 				break;
+			}
+
+			case "group"_hash:
+			{
+				std::string group;
+				ss >> group;
+
+				GroupPermissions perms;
+
+				if (!GroupPerms.contains(group))
+					GroupPerms[group] = perms;
+
+				while (std::getline(ss, tok, ' ')) {
+					switch (djb2a(tok)) {
+						case "nopasswd"_hash:
+							GroupPerms[group].NoPassword = true;
+							break;
+						case "selfpasswd"_hash:
+							GroupPerms[group].TargetPassword = false;
+							break;
+						case "targetpasswd"_hash:
+							GroupPerms[group].TargetPassword = true;
+							break;
+					}
+				}
 			}
 
 			case "cmd"_hash: // Defines a command rule
@@ -116,16 +135,11 @@ void ConfigParser::ParseConfig(std::ifstream& fs) {
 				while (std::getline(ss, tok, ' ')) {
 					switch (djb2a(tok)) {
 						case "nopasswd"_hash:
-						{
 							CommandPerms[command].NoPassword = true;
 							break;
-						}
-
 						case "targetpasswd"_hash:
-						{
 							CommandPerms[command].TargetPassword = true;
 							break;
-						}
 
 						default:
 							// TODO: Error Handling
@@ -141,4 +155,8 @@ void ConfigParser::ParseConfig(std::ifstream& fs) {
 			break;
 		}
 	}
+}
+
+const ConfigParser::GroupPermType& ConfigParser::GetGroupPermissions() {
+	return GroupPerms;
 }

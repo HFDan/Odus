@@ -70,3 +70,7 @@ std::string GetUserByUid(uid_t uid) {
 
 	return std::string(pwd->pw_name);
 }
+
+bool CanUserRunCommand(const std::string_view cmd, const ConfigParser& cp, const std::string_view user) {
+
+}

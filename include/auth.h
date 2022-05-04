@@ -1,6 +1,7 @@
 #pragma once
 #include <string_view>
 #include <string>
+#include <config.h>
 
 /**
  *
@@ -29,3 +30,6 @@ int GetUidByUser(const std::string_view user);
 
 [[nodiscard]]
 std::string GetUserByUid(uid_t uid);
+
+[[nodiscard]]
+bool CanUserRunCommand(const std::string_view cmd, const ConfigParser& cp, const std::string_view user);
